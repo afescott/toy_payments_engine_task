@@ -15,19 +15,22 @@ impl ClientAccounts {
     pub fn trans(&mut self, record: Record) {
         let is_withdraw_or_deposit = match record.transaction_type {
             Transaction::Withdrawal => {
-                self.client_account.entry(record.client_id).and_modify(|r| {
-                    if let Some(amount) = record.amount {
-                        if r.available > amount {
-                            r.available -= amount;
-                            true
+                self.client_account
+                    .entry(record.client_id)
+                    .and_modify(|r| {
+                        if let Some(amount) = record.amount {
+                            if r.available > amount {
+                                r.available -= amount;
+                                true
+                            } else {
+                                println!("Not enough funds");
+                                false
+                            }
                         } else {
-                            println!("Not enough funds");
                             false
-                        }
-                    } else {
-                        false
-                    };
-                });
+                        };
+                    })
+                    .or_default();
                 true
             }
             Transaction::Deposit => {
@@ -35,7 +38,7 @@ impl ClientAccounts {
                     self.client_account
                         .entry(record.client_id)
                         .and_modify(|acc| acc.available += amount)
-                        .or_insert(Account::new(record.amount.unwrap_or_default()));
+                        .or_insert(Account::new(amount));
                     true
                 } else {
                     println!("No funds provided");
@@ -49,8 +52,10 @@ impl ClientAccounts {
                     self.client_account
                         .entry(record.client_id)
                         .and_modify(|acc| {
-                            acc.available -= record.amount.expect("Value doesn't exist");
-                            acc.held += record.amount.expect("Value doesn't exist");
+                            if let Some(amount) = record.amount {
+                                acc.available -= amount;
+                                acc.held += amount;
+                            }
                         })
                         .or_default();
                 } else {
@@ -65,8 +70,10 @@ impl ClientAccounts {
                     self.client_account
                         .entry(record.client_id)
                         .and_modify(|acc| {
-                            acc.available += record.amount.expect("asdad");
-                            acc.held -= record.amount.unwrap_or_default();
+                            if let Some(amount) = record.amount {
+                                acc.available += amount;
+                                acc.held -= amount;
+                            }
                         })
                         .or_default();
                 } else {
@@ -80,9 +87,11 @@ impl ClientAccounts {
                     self.client_account
                         .entry(record.client_id)
                         .and_modify(|r| {
-                            r.total -= record.amount.expect("Value doesn't exist");
-                            r.held -= record.amount.expect("Value doesn't exist");
-                            r.locked = true;
+                            if let Some(amount) = record.amount {
+                                r.total -= amount;
+                                r.held -= amount;
+                                r.locked = true;
+                            }
                         })
                         .or_default();
                 } else {

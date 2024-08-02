@@ -14,11 +14,12 @@ fn main() -> crate::err::Result<()> {
         if let Some(path) = r {
             let mut rdr = Reader::from_path(path)?;
             let iter = rdr.deserialize::<Record>();
-            for (counter, record) in iter.enumerate() {
+            for (mut counter, record) in iter.enumerate() {
+                counter += 1;
                 if let Ok(record) = record {
                     tx.send(record)?;
                 } else {
-                    dbg!("Incorrect value type found at row: {:?}", counter + 1);
+                    dbg!("Incorrect value type found at row: ", counter);
                 }
             }
         }
@@ -35,8 +36,9 @@ fn main() -> crate::err::Result<()> {
 
         wtr.write_record(["client", "available", "held", "total", "locked"])?;
 
-        for ele in account_manager.client_account.values() {
+        for (client_id, ele) in account_manager.client_account {
             wtr.write_record([
+                client_id.to_string(),
                 (ele.total - ele.held).to_string(),
                 (ele.total + ele.available).to_string(),
                 (ele.available + ele.held).to_string(),
