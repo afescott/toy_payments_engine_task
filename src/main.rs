@@ -7,7 +7,6 @@ mod handle_tx;
 mod models;
 
 fn main() -> crate::err::Result<()> {
-    println!("Hello, incoming csv!");
     let (tx, rx) = std::sync::mpsc::channel::<Record>();
     let r = std::env::args().nth(1);
     let thread_deserialize = std::thread::spawn(move || -> Result<()> {
